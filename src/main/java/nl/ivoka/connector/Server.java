@@ -5,6 +5,7 @@ import nl.ivoka.MCWrapper;
 import nl.ivoka.task.TaskScheduler;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -85,7 +86,7 @@ public class Server implements TaskScheduler<MCWrapper> {
         this.plugin = plugin;
 
         runAsync(() -> {
-            try (ServerSocket listener = new ServerSocket(59898)) {
+            try (ServerSocket listener = new ServerSocket(59898, 1, InetAddress.getLocalHost())) { // new ServerSocket(0,1,InetAddress.getByName(ipAddress)); // random port and ipAddress
                 System.out.println("The connector server is running...");
                 ExecutorService pool = Executors.newFixedThreadPool(20);
                 while (!stop) {
