@@ -1,0 +1,14 @@
+main: nl.ivoka.MCWrapper
+version: 1.0
+name: MCWrapper-core
+
+author: Joris Vos
+database: false
+load: POSTWORLD
+
+commands:
+  stats:
+    description: Display player statistics
+    usage: /stats
+    permission: mcwrapper.stats
+    permission-message: You don't have 'mcwrapper.stats' permission
