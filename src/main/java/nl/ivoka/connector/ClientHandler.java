@@ -54,8 +54,9 @@ class ClientHandler implements Runnable {
                 out.println("SUBMITNAME");
             }
 
-            // Tell client that name is accepted
+            // Tell client that name is accepted and send welcome message
             out.println("NAMEACCEPTED " + name);
+            out.println("WELCOME " + Server.getWelcomeMessage());
 
             // Accept messages from this client and process them.
             while (in.hasNextLine()) {

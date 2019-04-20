@@ -28,17 +28,17 @@ import java.util.concurrent.Future;
  * is entirely plain text. The messages of MCWP are:
  *
  * ClientHandler -> Server
- *     NAME <text>
- *     GETCONNECTIONS
- *     BROADCAST <text>
+ *     NAME <text>                  *response*
+ *     GETCONNECTIONS               *response*
+ *     BROADCAST <text>             *NO response*
  *
- *     GETPLAYERS
- *     GETALLPLAYERS
- *     GETSTATS <playerUUID>
+ *     GETPLAYERS                   *response*
+ *     GETALLPLAYERS                *response*
+ *     GETSTATS <playerUUID>        *response*
  *
  * Server -> ClientHandler
  *     SUBMITNAME
- *     NAMEACCEPTED
+ *     NAMEACCEPTED <text>
  *     WELCOME <text>
  *     CONNECTIONS <n>
  *     MESSAGE <text>
@@ -47,13 +47,30 @@ import java.util.concurrent.Future;
  *
  *     PLAYERS <n> [<player1Name>:<player1UUID> <player2>:<player2UUID> ...]
  *     ALLPLAYERS <n> [<player1Name>:<player1UUID> <player2>:<player2UUID> ...]
- *     STATS <playerName> kills:<n> deaths:<n> logins:<n> teleports:<n>
+ *     STATS <playerUUID> kills:<n> deaths:<n> logins:<n> teleports:<n>
+ *
+ *     EVENT <event>
  *
  * CLOSE <n> -> <n> equals 0 (other reason) or 1 (server stopped)
  * ERROR <n> -> <n> equals:
  *      0 - error
  *      1 - wrong use of command
  *      2 - no such player found
+ *
+ * EVENT
+ *     SERVER
+ *         STATUS
+ *             DONE
+ *             STOPPING
+ *         COMMAND <command>
+ *         SAVING
+ *     PLAYER
+ *         JOIN <playerUUID>
+ *         QUIT <playerUUID>
+ *         CHAT <playerUUID> <chat>
+ *         TELEPORT <playerUUID> <x> <y> <z> <yaw> <pitch>
+ *         COMMAND <playerUUID> <command>
+ *
  */
 
 /**
@@ -67,12 +84,15 @@ import java.util.concurrent.Future;
  * This is just a teaching example so it can be enhanced in many ways, e.g., better
  * logging. Another is to accept a lot of fun commands, like Slack.
  */
+
+// TODO make this secure (by username and password)
 public class Server implements TaskScheduler<MCWrapper> {
     // All client names with sockets, so we can check for duplicates upon registration and access the Sockets.
     private static Map<String, ClientHandler> clients = new HashMap<>();
     private static List<ClientHandler> namelessClients = new ArrayList<>();
 
     private boolean stop=false;
+    private static String welcomeMessage="Welcome to the MCWrapper-core socket. You may only connect to this if you have permission from the server owner!"; // TODO make this message configurable in config.yml
 
     private MCWrapper plugin;
 
@@ -87,11 +107,11 @@ public class Server implements TaskScheduler<MCWrapper> {
 
         runAsync(() -> {
             try (ServerSocket listener = new ServerSocket(59898, 1, InetAddress.getLocalHost())) { // new ServerSocket(0,1,InetAddress.getByName(ipAddress)); // random port and ipAddress
-                System.out.println("The connector server is running...");
+                System.out.println("The connector server is running on "+InetAddress.getLocalHost().toString()+":59898 ...");
                 ExecutorService pool = Executors.newFixedThreadPool(20);
-                while (!stop) {
+                while (!stop)
                     pool.execute(new ClientHandler(listener.accept(), plugin));
-                }
+                fireEvent("SERVER STATUS STOPPING", true);
 
                 for (ClientHandler clientHandler : clients.values())
                     clientHandler.close();
@@ -109,7 +129,7 @@ public class Server implements TaskScheduler<MCWrapper> {
     public void stopServer() {
         stop=true;
 
-        try (Socket socket = new Socket("127.0.0.1", 59898)) {
+        try (Socket socket = new Socket(InetAddress.getLocalHost(), 59898)) {
             System.out.println("Creating closing socket...");
         } catch (IOException e) {
             System.out.println("Error message: "+e.getMessage()+"\n"+
@@ -152,6 +172,7 @@ public class Server implements TaskScheduler<MCWrapper> {
         }
     }
 
+    // region Commands
     public static void broadcast(String message) { broadcast(message, null); }
     public static void broadcast(String message, ClientHandler clientHandler) {
         for (ClientHandler client : clients.values()) {
@@ -159,8 +180,19 @@ public class Server implements TaskScheduler<MCWrapper> {
                 client.println("MESSAGE "+message);
         }
     }
+    public void fireEvent(String event) { fireEvent(event, false); }
+    public void fireEvent(String event, boolean override) {
+        if (!stop || override) {
+            for (ClientHandler client : clients.values())
+                client.println("EVENT " + event);
+        }
+    }
+    // endregion
 
+    // region Getters
     public static Map<String, ClientHandler> getClients() { return clients; }
+    public static String getWelcomeMessage() { return welcomeMessage; }
+    // endregion
 
     @Override
     public MCWrapper getPlugin() { return plugin; }

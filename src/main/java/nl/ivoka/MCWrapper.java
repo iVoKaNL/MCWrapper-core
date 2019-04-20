@@ -3,6 +3,7 @@ package nl.ivoka;
 import nl.ivoka.commands.Stats;
 import nl.ivoka.connector.Server;
 import nl.ivoka.listeners.DataListener;
+import nl.ivoka.listeners.EventListener;
 import nl.ivoka.listeners.StatisticsListener;
 import nl.ivoka.mongo.MongoDataSource;
 import nl.ivoka.mongo.data.entity.PlayerStatistics;
@@ -38,6 +39,7 @@ public class MCWrapper extends JavaPlugin {
         // Register listeners
         getServer().getPluginManager().registerEvents(new DataListener(this), this);
         getServer().getPluginManager().registerEvents(new StatisticsListener(this), this);
+        getServer().getPluginManager().registerEvents(new EventListener(this), this);
     }
 
     private void initializeMongo() {
@@ -60,8 +62,7 @@ public class MCWrapper extends JavaPlugin {
     public MongoDataSource getMongoDataSource() {
         return mongoDataSource;
     }
-
-
+    public Server getConnectorServer() { return server; }
 
     // region Command handlers
     public String getPlayers() {
@@ -96,7 +97,7 @@ public class MCWrapper extends JavaPlugin {
             PlayerStatisticsRepository repository = getMongoDataSource().getRepository(PlayerStatisticsRepository.class);
             PlayerStatistics statistics = repository.read(player.getUniqueId(), true);
 
-            msg += player.getName()+" ";
+            msg += player.getUniqueId().toString()+" ";
 
             msg += "kills:"+statistics.getKills()+" ";
             msg += "deaths:"+statistics.getDeaths()+" ";
