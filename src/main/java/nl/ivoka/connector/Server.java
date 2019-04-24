@@ -51,7 +51,10 @@ import java.util.concurrent.Future;
  *
  *     EVENT <event>
  *
- * CLOSE <n> -> <n> equals 0 (other reason) or 1 (server stopped)
+ * CLOSE <n> -> <n> equals:
+ *      0 - no specific reason
+ *      1 - server stopped
+ *      2 - client closed connection
  * ERROR <n> -> <n> equals:
  *      0 - error
  *      1 - wrong use of command
@@ -111,7 +114,7 @@ public class Server implements TaskScheduler<MCWrapper> {
                 ExecutorService pool = Executors.newFixedThreadPool(20);
                 while (!stop)
                     pool.execute(new ClientHandler(listener.accept(), plugin));
-                fireEvent("SERVER STATUS STOPPING", true);
+                fireEvent("SERVER STATUS STOP", true);
 
                 for (ClientHandler clientHandler : clients.values())
                     clientHandler.close();

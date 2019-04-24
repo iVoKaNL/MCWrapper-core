@@ -61,8 +61,10 @@ class ClientHandler implements Runnable {
             // Accept messages from this client and process them.
             while (in.hasNextLine()) {
                 String input = in.nextLine();
-                if (input.startsWith("QUIT"))
+                if (input.startsWith("QUIT")) {
+                    out.println("CLOSE 2 Client closed connection.");
                     return;
+                }
 
                 processInput(input);
             }
